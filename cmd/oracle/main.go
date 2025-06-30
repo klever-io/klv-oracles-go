@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/klever-io/klv-oracles-go/config"
 	chainCore "github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-crypto-go/signing"
@@ -16,7 +17,6 @@ import (
 	chainCommon "github.com/multiversx/mx-chain-go/common"
 	logger "github.com/multiversx/mx-chain-logger-go"
 	"github.com/multiversx/mx-chain-logger-go/file"
-	"github.com/multiversx/mx-oracles-go/config"
 	"github.com/multiversx/mx-sdk-go/aggregator"
 	"github.com/multiversx/mx-sdk-go/aggregator/api/gin"
 	"github.com/multiversx/mx-sdk-go/aggregator/fetchers"
@@ -36,7 +36,7 @@ import (
 
 const (
 	defaultLogsPath = "logs"
-	logFilePrefix   = "mx-oracle"
+	logFilePrefix   = "klv-oracle"
 )
 
 var log = logger.GetOrCreate("priceFeeder/main")
@@ -44,10 +44,13 @@ var log = logger.GetOrCreate("priceFeeder/main")
 // appVersion should be populated at build time using ldflags
 // Usage examples:
 // linux/mac:
-//            go build -i -v -ldflags="-X main.appVersion=$(git describe --tags --long --dirty)"
+//
+//	go build -i -v -ldflags="-X main.appVersion=$(git describe --tags --long --dirty)"
+//
 // windows:
-//            for /f %i in ('git describe --tags --long --dirty') do set VERS=%i
-//            go build -i -v -ldflags="-X main.appVersion=%VERS%"
+//
+//	for /f %i in ('git describe --tags --long --dirty') do set VERS=%i
+//	go build -i -v -ldflags="-X main.appVersion=%VERS%"
 var appVersion = chainCommon.UnVersionedAppString
 
 func main() {
@@ -60,8 +63,8 @@ func main() {
 	app.Version = fmt.Sprintf("%s/%s/%s-%s/%s", appVersion, runtime.Version(), runtime.GOOS, runtime.GOARCH, machineID)
 	app.Authors = []cli.Author{
 		{
-			Name:  "The MultiversX Team",
-			Email: "contact@multiversx.com",
+			Name:  "The Klever Blockchain Team",
+			Email: "contact@klever.io",
 		},
 	}
 
@@ -251,7 +254,7 @@ func startOracle(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	log.Info("Starting MultiversX Notifee")
+	log.Info("Starting Klever Blockchain Notifee")
 
 	err = pollingHandler.StartProcessingLoop()
 	if err != nil {

@@ -1,2 +1,2 @@
-# mx-oracles-go
-MultiversX oracles system
+# klv-oracles-go
+Klever Blockchain oracles system

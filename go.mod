@@ -1,6 +1,6 @@
-module github.com/multiversx/mx-oracles-go
+module github.com/klever-io/klv-oracles-go
 
-go 1.17
+go 1.23
 
 require (
 	github.com/multiversx/mx-chain-core-go v1.1.30

@@ -1,9 +1,9 @@
 package main
 
 import (
+	"github.com/klever-io/klv-oracles-go/config"
 	"github.com/multiversx/mx-chain-go/facade"
 	logger "github.com/multiversx/mx-chain-logger-go"
-	"github.com/multiversx/mx-oracles-go/config"
 	"github.com/urfave/cli"
 )
 
