@@ -1,6 +1,6 @@
 package config
 
-import "github.com/multiversx/mx-sdk-go/aggregator/fetchers"
+import "github.com/klever-io/klv-oracles-go/aggregator/fetchers"
 
 // PriceNotifierConfig price notifier configuration struct
 type PriceNotifierConfig struct {
