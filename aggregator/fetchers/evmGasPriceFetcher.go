@@ -50,19 +50,19 @@ func (fetcher *evmGasPriceFetcher) FetchPrice(ctx context.Context, base string, 
 		return 0, err
 	}
 
-	latestGasPrice := 0
+	var latestGasPrice float64
 	switch fetcher.config.Selector {
 	case evmFastGasPrice:
-		_, err = fmt.Sscanf(response.Result.FastGasPrice, "%d", &latestGasPrice)
+		_, err = fmt.Sscanf(response.Result.FastGasPrice, "%f", &latestGasPrice)
 	case evmProposeGasPrice:
-		_, err = fmt.Sscanf(response.Result.ProposeGasPrice, "%d", &latestGasPrice)
+		_, err = fmt.Sscanf(response.Result.ProposeGasPrice, "%f", &latestGasPrice)
 	case evmSafeGasPrice:
-		_, err = fmt.Sscanf(response.Result.SafeGasPrice, "%d", &latestGasPrice)
+		_, err = fmt.Sscanf(response.Result.SafeGasPrice, "%f", &latestGasPrice)
 	default:
 		err = fmt.Errorf("%w: %q", errInvalidGasPriceSelector, fetcher.config.Selector)
 	}
 
-	return float64(latestGasPrice), err
+	return latestGasPrice, err
 }
 
 // Name returns the name

@@ -91,9 +91,9 @@ func TestKraken_FetchPrice(t *testing.T) {
 		GetCalled: func(ctx context.Context, url string, response interface{}) error {
 			assert.Equal(t, "api-url", url)
 			gasStationResp := response.(*gasStationResponse)
-			gasStationResp.Result.SafeGasPrice = "37"
-			gasStationResp.Result.ProposeGasPrice = "38"
-			gasStationResp.Result.FastGasPrice = "39"
+			gasStationResp.Result.SafeGasPrice = "37.1234"
+			gasStationResp.Result.ProposeGasPrice = "38.1234"
+			gasStationResp.Result.FastGasPrice = "39.1234"
 
 			return nil
 		},
@@ -108,7 +108,7 @@ func TestKraken_FetchPrice(t *testing.T) {
 		fetcher.ResponseGetter = testHTTPResponseGetter
 		value, err := fetcher.FetchPrice(context.Background(), "test", "pair")
 		assert.Nil(t, err)
-		assert.Equal(t, float64(37), value)
+		assert.Equal(t, 37.1234, value)
 	})
 	t.Run("with ProposeGasPrice should work", func(t *testing.T) {
 		t.Parallel()
@@ -119,7 +119,7 @@ func TestKraken_FetchPrice(t *testing.T) {
 		fetcher.ResponseGetter = testHTTPResponseGetter
 		value, err := fetcher.FetchPrice(context.Background(), "test", "pair")
 		assert.Nil(t, err)
-		assert.Equal(t, float64(38), value)
+		assert.Equal(t, 38.1234, value)
 	})
 	t.Run("with FastGasPrice should work", func(t *testing.T) {
 		t.Parallel()
@@ -130,6 +130,6 @@ func TestKraken_FetchPrice(t *testing.T) {
 		fetcher.ResponseGetter = testHTTPResponseGetter
 		value, err := fetcher.FetchPrice(context.Background(), "test", "pair")
 		assert.Nil(t, err)
-		assert.Equal(t, float64(39), value)
+		assert.Equal(t, 39.1234, value)
 	})
 }
