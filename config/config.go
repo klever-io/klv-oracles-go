@@ -7,6 +7,7 @@ type PriceNotifierConfig struct {
 	GeneralConfig             GeneralNotifierConfig
 	AuthenticationConfig      AuthenticationConfig
 	Pairs                     []Pair
+	GasStationPair            []Pair
 	XExchangeTokenIDsMappings map[string]fetchers.XExchangeTokensPair
 }
 

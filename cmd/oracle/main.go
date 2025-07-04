@@ -176,9 +176,24 @@ func startOracle(ctx *cli.Context, version string) error {
 		return err
 	}
 
+	gasStationFetcherArgs := fetchers.ArgsPriceFetcher{
+		FetcherName:    fetchers.EVMGasPriceStation,
+		ResponseGetter: httpResponseGetter,
+		EVMGasConfig: fetchers.EVMGasPriceFetcherConfig{
+			ApiURL:   "https://api.etherscan.io/api?module=gastracker&action=gasoracle",
+			Selector: "SafeGasPrice",
+		},
+	}
+
+	gasPriceFetcher, err := fetchers.NewPriceFetcher(gasStationFetcherArgs)
+	if err != nil {
+		return err
+	}
+
 	argsPriceNotifier := aggregator.ArgsPriceNotifier{
 		Pairs:            []*aggregator.ArgsPair{},
 		Aggregator:       priceAggregator,
+		GasPriceFetcher:  gasPriceFetcher,
 		Notifee:          mxNotifee,
 		AutoSendInterval: time.Second * time.Duration(cfg.GeneralConfig.AutoSendIntervalInSeconds),
 	}
@@ -193,6 +208,20 @@ func startOracle(ctx *cli.Context, version string) error {
 		addPairToFetchers(argsPair, priceFetchers)
 		argsPriceNotifier.Pairs = append(argsPriceNotifier.Pairs, &argsPair)
 	}
+
+	for _, pair := range cfg.GasStationPair {
+		gasArgsPair := aggregator.ArgsPair{
+			Base:                      "GWEI",
+			Quote:                     pair.Quote,
+			PercentDifferenceToNotify: pair.PercentDifferenceToNotify,
+			Decimals:                  pair.Decimals,
+			Exchanges:                 getMapFromSlice(pair.Exchanges),
+		}
+
+		gasPriceFetcher.AddPair(gasArgsPair.Base, gasArgsPair.Quote)
+		argsPriceNotifier.Pairs = append(argsPriceNotifier.Pairs, &gasArgsPair)
+	}
+
 	priceNotifier, err := aggregator.NewPriceNotifier(argsPriceNotifier)
 	if err != nil {
 		return err
@@ -221,7 +250,7 @@ func startOracle(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	log.Info("Starting MultiversX Notifee")
+	log.Info("Starting Klever Blockchain Notifee")
 
 	err = pollingHandler.StartProcessingLoop()
 	if err != nil {
@@ -257,10 +286,6 @@ func createPriceFetchers(httpReponseGetter aggregator.ResponseGetter) ([]aggrega
 		args := fetchers.ArgsPriceFetcher{
 			FetcherName:    exchangeName,
 			ResponseGetter: httpReponseGetter,
-			EVMGasConfig: fetchers.EVMGasPriceFetcherConfig{
-				ApiURL:   "https://api.etherscan.io/api?module=gastracker&action=gasoracle",
-				Selector: "SafeGasPrice",
-			},
 		}
 
 		priceFetcher, err := fetchers.NewPriceFetcher(args)
