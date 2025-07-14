@@ -24,7 +24,6 @@ type ArgsGasPriceService struct {
 	GasPriceFetcher PriceFetcher // Fetcher for gas prices
 }
 
-// TODO: add gas ticker, Base chain currency ticker
 type gasPriceService struct {
 	gasPriceFetcher PriceFetcher
 }

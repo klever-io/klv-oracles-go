@@ -1,6 +1,10 @@
 package aggregator
 
-import "context"
+import (
+	"context"
+
+	gas "github.com/klever-io/klv-oracles-go/aggregator/gasStation"
+)
 
 // ResponseGetter is the component able to execute a get operation on the provided URL
 type ResponseGetter interface {
@@ -43,5 +47,15 @@ type ArgsPriceChanged struct {
 // PriceNotifee defines the behavior of a component able to be notified over a price change
 type PriceNotifee interface {
 	PriceChanged(ctx context.Context, priceChanges []*ArgsPriceChanged) error
+	IsInterfaceNil() bool
+}
+
+// GasPriceService handles all gas price related conversions and operations
+type GasPriceService interface {
+	// ConvertGasPrices converts gas prices in GWEI to various denominations
+	ConvertGasPrices(ctx context.Context, pairs []gas.ArgsPairInfo) ([]gas.ArgsPairInfo, error)
+	// VerifyRequiredPairs checks if all required pairs for gas price calculation are available
+	VerifyRequiredPairs(pairs []gas.ArgsPairInfo) error
+	// IsInterfaceNil returns true if there is no value under the interface
 	IsInterfaceNil() bool
 }

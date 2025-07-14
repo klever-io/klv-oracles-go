@@ -35,4 +35,6 @@ var (
 	ErrPairNotSupported = errors.New("pair not supported")
 	// ErrNilAuthClient signals that a nil auth client was provided
 	ErrNilAuthClient = errors.New("nil auth client")
+	// ErrNilGasPriceService signals that a nil gas price service was provided
+	ErrNilGasPriceService = errors.New("nil gas price service")
 )

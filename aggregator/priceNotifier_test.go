@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/klever-io/klv-oracles-go/aggregator"
+	gas "github.com/klever-io/klv-oracles-go/aggregator/gasStation"
 	"github.com/klever-io/klv-oracles-go/aggregator/mock"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/stretchr/testify/assert"
@@ -28,6 +29,7 @@ func createMockArgsPriceNotifier() aggregator.ArgsPriceNotifier {
 		},
 		Aggregator:       &mock.PriceFetcherStub{},
 		Notifee:          &mock.PriceNotifeeStub{},
+		GasPriceService:  &mock.GasPriceServiceStub{},
 		AutoSendInterval: time.Minute,
 	}
 }
@@ -85,6 +87,16 @@ func TestNewPriceNotifier(t *testing.T) {
 		pn, err := aggregator.NewPriceNotifier(args)
 		assert.True(t, check.IfNil(pn))
 		assert.Equal(t, aggregator.ErrNilPriceAggregator, err)
+	})
+	t.Run("nil gas service", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgsPriceNotifier()
+		args.GasPriceService = nil
+
+		pn, err := aggregator.NewPriceNotifier(args)
+		assert.True(t, check.IfNil(pn))
+		assert.Equal(t, aggregator.ErrNilGasPriceService, err)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
@@ -340,5 +352,168 @@ func TestPriceNotifier_Execute(t *testing.T) {
 		assert.Nil(t, err)
 
 		assert.Equal(t, 2, numCalled)
+	})
+
+	t.Run("gas token pair should denominated gwei price", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgsPriceNotifier()
+		price := 1.987654321
+		conversionFactor := 0.000000001 // Assuming 1 GWEI = 0.000000001 ETH
+		args.Aggregator = &mock.PriceFetcherStub{
+			FetchPriceCalled: func(ctx context.Context, base string, quote string) (float64, error) {
+				return price, nil
+			},
+		}
+		numCalled := 0
+		args.Notifee = &mock.PriceNotifeeStub{
+			PriceChangedCalled: func(ctx context.Context, args []*aggregator.ArgsPriceChanged) error {
+				require.Equal(t, 2, len(args))
+				assert.Equal(t, "GWEI", args[1].Base)
+				assert.Equal(t, "QUOTE", args[1].Quote)
+				assert.Equal(t, uint64(1988), args[1].DenominatedPrice)
+				numCalled++
+
+				return nil
+			},
+		}
+
+		args.GasPriceService = &mock.GasPriceServiceStub{
+			ConvertGasPricesCalled: func(ctx context.Context, pairs []gas.ArgsPairInfo) ([]gas.ArgsPairInfo, error) {
+				// Simulate the conversion of GWEI to QUOTE token
+				for i, pair := range pairs {
+					if pair.Base == "GWEI" && pair.Quote == "QUOTE" {
+						pairs[i].Price = conversionFactor * price // Assuming 1 GWEI = 0.000000001 ETH
+						pairs[i].Timestamp = time.Now().Unix()
+					}
+				}
+				return pairs, nil
+			},
+		}
+
+		args.Pairs = append(args.Pairs, &aggregator.ArgsPair{
+			Base:                      "GWEI",
+			Quote:                     "QUOTE",
+			PercentDifferenceToNotify: 1,
+			Decimals:                  12,
+			Exchanges:                 map[string]struct{}{"Binance": {}},
+		})
+
+		pn, _ := aggregator.NewPriceNotifier(args)
+		err := pn.Execute(context.Background())
+		assert.Nil(t, err)
+
+		assert.Equal(t, 1, numCalled)
+	})
+
+	t.Run("multiple gas token pair should denominated gwei price for each", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgsPriceNotifier()
+		price := 1.987654321
+		conversionFactor := 1e-9 // Assuming 1 GWEI = 0.000000001 ETH
+		args.Aggregator = &mock.PriceFetcherStub{
+			FetchPriceCalled: func(ctx context.Context, base string, quote string) (float64, error) {
+				return price, nil
+			},
+		}
+		numCalled := 0
+		args.Notifee = &mock.PriceNotifeeStub{
+			PriceChangedCalled: func(ctx context.Context, args []*aggregator.ArgsPriceChanged) error {
+				require.Equal(t, 3, len(args))
+				assert.Equal(t, "GWEI", args[1].Base)
+				assert.Equal(t, "QUOTE2", args[1].Quote)
+				assert.Equal(t, uint64(3975), args[1].DenominatedPrice)
+
+				assert.Equal(t, "GWEI", args[2].Base)
+				assert.Equal(t, "QUOTE", args[2].Quote)
+				assert.Equal(t, uint64(1988), args[2].DenominatedPrice)
+				numCalled++
+
+				return nil
+			},
+		}
+
+		args.GasPriceService = &mock.GasPriceServiceStub{
+			ConvertGasPricesCalled: func(ctx context.Context, pairs []gas.ArgsPairInfo) ([]gas.ArgsPairInfo, error) {
+				// Simulate the conversion of GWEI to QUOTE token
+				for i, pair := range pairs {
+					if pair.Base == "GWEI" && pair.Quote == "QUOTE" {
+						pairs[i].Price = conversionFactor * price
+						pairs[i].Timestamp = time.Now().Unix()
+					}
+
+					if pair.Base == "GWEI" && pair.Quote == "QUOTE2" {
+						pairs[i].Price = conversionFactor * price * 2
+						pairs[i].Timestamp = time.Now().Unix()
+					}
+				}
+				return pairs, nil
+			},
+		}
+
+		args.Pairs = append(args.Pairs, &aggregator.ArgsPair{
+			Base:                      "GWEI",
+			Quote:                     "QUOTE2",
+			PercentDifferenceToNotify: 1,
+			Decimals:                  12,
+			Exchanges:                 map[string]struct{}{"Binance": {}},
+		})
+
+		args.Pairs = append(args.Pairs, &aggregator.ArgsPair{
+			Base:                      "GWEI",
+			Quote:                     "QUOTE",
+			PercentDifferenceToNotify: 1,
+			Decimals:                  12,
+			Exchanges:                 map[string]struct{}{"Binance": {}},
+		})
+
+		pn, _ := aggregator.NewPriceNotifier(args)
+		err := pn.Execute(context.Background())
+		assert.Nil(t, err)
+
+		assert.Equal(t, 1, numCalled)
+	})
+
+	t.Run("should fail, gas service returns error", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgsPriceNotifier()
+		price := 1.987654321
+		args.Aggregator = &mock.PriceFetcherStub{
+			FetchPriceCalled: func(ctx context.Context, base string, quote string) (float64, error) {
+				return price, nil
+			},
+		}
+
+		numCalled := 0
+		args.Notifee = &mock.PriceNotifeeStub{
+			PriceChangedCalled: func(ctx context.Context, args []*aggregator.ArgsPriceChanged) error {
+				numCalled++
+
+				return nil
+			},
+		}
+
+		args.GasPriceService = &mock.GasPriceServiceStub{
+			ConvertGasPricesCalled: func(ctx context.Context, pairs []gas.ArgsPairInfo) ([]gas.ArgsPairInfo, error) {
+				return nil, assert.AnError
+			},
+		}
+
+		args.Pairs = append(args.Pairs, &aggregator.ArgsPair{
+			Base:                      "GWEI",
+			Quote:                     "QUOTE",
+			PercentDifferenceToNotify: 1,
+			Decimals:                  12,
+			Exchanges:                 map[string]struct{}{"Binance": {}},
+		})
+
+		pn, _ := aggregator.NewPriceNotifier(args)
+		err := pn.Execute(context.Background())
+		assert.ErrorIs(t, err, assert.AnError)
+
+		// should not notify if gas price service fails
+		assert.Equal(t, 0, numCalled)
 	})
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/klever-io/klv-oracles-go/aggregator"
 	"github.com/klever-io/klv-oracles-go/aggregator/api/gin"
 	"github.com/klever-io/klv-oracles-go/aggregator/fetchers"
+	gas "github.com/klever-io/klv-oracles-go/aggregator/gasStation"
 	"github.com/klever-io/klv-oracles-go/aggregator/notifees"
 	"github.com/klever-io/klv-oracles-go/config"
 	"github.com/klever-io/klv-oracles-go/tools/wallet"
@@ -190,10 +191,19 @@ func startOracle(ctx *cli.Context, version string) error {
 		return err
 	}
 
+	gasServiceArgs := gas.ArgsGasPriceService{
+		GasPriceFetcher: gasPriceFetcher,
+	}
+
+	gasService, err := gas.NewGasPriceService(gasServiceArgs)
+	if err != nil {
+		return err
+	}
+
 	argsPriceNotifier := aggregator.ArgsPriceNotifier{
 		Pairs:            []*aggregator.ArgsPair{},
 		Aggregator:       priceAggregator,
-		GasPriceFetcher:  gasPriceFetcher,
+		GasPriceService:  gasService,
 		Notifee:          mxNotifee,
 		AutoSendInterval: time.Second * time.Duration(cfg.GeneralConfig.AutoSendIntervalInSeconds),
 	}
