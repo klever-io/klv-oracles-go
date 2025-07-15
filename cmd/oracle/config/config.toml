@@ -44,14 +44,3 @@
     PercentDifferenceToNotify = 1 # percent difference to notify price change. 0 notifies for each change
     Decimals = 9 # decimals for prices
     Exchanges = ["EVM gas price station when using selector SafeGasPrice"]
-# XExchange token ids mappings
-# This should be a mapping between the above generic symbols pairs and their xExchange token ids equivalents
-# The key in map must be uppercase and tokens should be separated by "-"
-# All available pairs can be found at https://api.multiversx.com/mex-pairs
-# egs.
-#   "ETH-USD"
-#       Base  = "ETH-tbd000"   -> placeholder, not added yet
-#       Quote = "USDC-c76f1f"
-#   "EGLD-USD"
-#       Base  = "WEGLD-bd4d79"
-#       Quote = "USDC-c76f1f"

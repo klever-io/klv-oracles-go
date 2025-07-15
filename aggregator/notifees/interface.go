@@ -8,7 +8,7 @@ import (
 	"github.com/klever-io/klv-bridge-eth-go/clients/klever/proxy/models"
 )
 
-// Proxy holds the primitive functions that the multiversx proxy engine supports & implements
+// Proxy holds the primitive functions that the klever blockchain proxy engine supports & implements
 // dependency inversion: blockchain package is considered inner business logic, this package is considered "plugin"
 type Proxy interface {
 	GetNetworkConfig(ctx context.Context) (*models.NetworkConfig, error)

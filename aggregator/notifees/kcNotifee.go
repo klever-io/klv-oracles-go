@@ -87,7 +87,7 @@ func checkArgsKCNotifee(args ArgsKCNotifee) error {
 	return nil
 }
 
-// PriceChanged is the function that gets called by a price notifier. This function will assemble a MultiversX
+// PriceChanged is the function that gets called by a price notifier. This function will assemble a Klever Blockchain
 // transaction, having the transaction's data field containing all the price changes information
 func (en *kcNotifee) PriceChanged(ctx context.Context, priceChanges []*aggregator.ArgsPriceChanged) error {
 	txData, err := en.prepareTxData(priceChanges)
