@@ -164,7 +164,7 @@ func startOracle(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	argsNotifee := notifees.ArgsMxNotifee{
+	argsNotifee := notifees.ArgsKCNotifee{
 		Proxy:           proxy,
 		TxNonceHandler:  txNonceHandler,
 		ContractAddress: aggregatorAddress,
@@ -172,7 +172,7 @@ func startOracle(ctx *cli.Context, version string) error {
 		BaseGasLimit:    cfg.GeneralConfig.BaseGasLimit,
 		GasLimitForEach: cfg.GeneralConfig.GasLimitForEach,
 	}
-	mxNotifee, err := notifees.NewMxNotifee(argsNotifee)
+	kcNotifee, err := notifees.NewKCNotifee(argsNotifee)
 	if err != nil {
 		return err
 	}
@@ -204,7 +204,7 @@ func startOracle(ctx *cli.Context, version string) error {
 		Pairs:            []*aggregator.ArgsPair{},
 		Aggregator:       priceAggregator,
 		GasPriceService:  gasService,
-		Notifee:          mxNotifee,
+		Notifee:          kcNotifee,
 		AutoSendInterval: time.Second * time.Duration(cfg.GeneralConfig.AutoSendIntervalInSeconds),
 	}
 	for _, pair := range cfg.Pairs {

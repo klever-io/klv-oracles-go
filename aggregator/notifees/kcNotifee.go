@@ -20,8 +20,8 @@ const minGasLimit = uint64(1)
 
 var log = logger.GetOrCreate("klv-oracle-go/aggregator/notifees")
 
-// ArgsMxNotifee is the argument DTO for the NewMxNotifee function
-type ArgsMxNotifee struct {
+// ArgsKCNotifee is the argument DTO for the NewKCNotifee function
+type ArgsKCNotifee struct {
 	Proxy           Proxy
 	TxNonceHandler  TransactionNonceHandler
 	ContractAddress address.Address
@@ -30,7 +30,7 @@ type ArgsMxNotifee struct {
 	GasLimitForEach uint64
 }
 
-type mxNotifee struct {
+type kcNotifee struct {
 	proxy           Proxy
 	txNonceHandler  TransactionNonceHandler
 	contractAddress address.Address
@@ -41,9 +41,9 @@ type mxNotifee struct {
 	gasLimitForEach uint64
 }
 
-// NewMxNotifee will create a new instance of mxNotifee
-func NewMxNotifee(args ArgsMxNotifee) (*mxNotifee, error) {
-	err := checkArgsMxNotifee(args)
+// NewKCNotifee will create a new instance of kcNotifee
+func NewKCNotifee(args ArgsKCNotifee) (*kcNotifee, error) {
+	err := checkArgsKCNotifee(args)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func NewMxNotifee(args ArgsMxNotifee) (*mxNotifee, error) {
 		return nil, err
 	}
 
-	notifee := &mxNotifee{
+	notifee := &kcNotifee{
 		proxy:           args.Proxy,
 		txNonceHandler:  args.TxNonceHandler,
 		contractAddress: args.ContractAddress,
@@ -67,7 +67,7 @@ func NewMxNotifee(args ArgsMxNotifee) (*mxNotifee, error) {
 	return notifee, nil
 }
 
-func checkArgsMxNotifee(args ArgsMxNotifee) error {
+func checkArgsKCNotifee(args ArgsKCNotifee) error {
 	if check.IfNil(args.Proxy) {
 		return errNilProxy
 	}
@@ -89,7 +89,7 @@ func checkArgsMxNotifee(args ArgsMxNotifee) error {
 
 // PriceChanged is the function that gets called by a price notifier. This function will assemble a MultiversX
 // transaction, having the transaction's data field containing all the price changes information
-func (en *mxNotifee) PriceChanged(ctx context.Context, priceChanges []*aggregator.ArgsPriceChanged) error {
+func (en *kcNotifee) PriceChanged(ctx context.Context, priceChanges []*aggregator.ArgsPriceChanged) error {
 	txData, err := en.prepareTxData(priceChanges)
 	if err != nil {
 		return err
@@ -144,7 +144,7 @@ func (en *mxNotifee) PriceChanged(ctx context.Context, priceChanges []*aggregato
 }
 
 // calculateHash marshalizes the interface and calculates its hash
-func (en *mxNotifee) calculateHash(
+func (en *kcNotifee) calculateHash(
 	object interface{},
 ) ([]byte, error) {
 	mrsData, err := en.marshalizer.Marshal(object)
@@ -156,7 +156,7 @@ func (en *mxNotifee) calculateHash(
 	return hash, nil
 }
 
-func (en *mxNotifee) prepareTxData(priceChanges []*aggregator.ArgsPriceChanged) ([]byte, error) {
+func (en *kcNotifee) prepareTxData(priceChanges []*aggregator.ArgsPriceChanged) ([]byte, error) {
 	txDataBuilder := builders.NewTxDataBuilder()
 	txDataBuilder.Function(function)
 
@@ -172,6 +172,6 @@ func (en *mxNotifee) prepareTxData(priceChanges []*aggregator.ArgsPriceChanged) 
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
-func (en *mxNotifee) IsInterfaceNil() bool {
+func (en *kcNotifee) IsInterfaceNil() bool {
 	return en == nil
 }

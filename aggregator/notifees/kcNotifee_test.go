@@ -28,12 +28,12 @@ var walletSk = "8734062c1158f26a3ca8a4a0da87b527a7c168653f7f4c77045e5cf571497d9d
 
 const chainID = "test"
 
-func createMockArgsMxNotifee() ArgsMxNotifee {
+func createMockArgsKCNotifee() ArgsKCNotifee {
 	contractAddress, _ := address.NewAddressFromBytes(bytes.Repeat([]byte{1}, 32))
 
 	notifeesWallet, _ := wallet.NewWalletFroHex(walletSk)
 
-	return ArgsMxNotifee{
+	return ArgsKCNotifee{
 		Proxy:           &interactors.ProxyStub{},
 		TxNonceHandler:  &testsCommon.TxNonceHandlerV2Stub{},
 		Wallet:          notifeesWallet,
@@ -43,7 +43,7 @@ func createMockArgsMxNotifee() ArgsMxNotifee {
 	}
 }
 
-func createMockArgsMxNotifeeWithSomeRealComponents() ArgsMxNotifee {
+func createMockArgsKCNotifeeWithSomeRealComponents() ArgsKCNotifee {
 	proxy := &interactors.ProxyStub{
 		GetNetworkConfigCalled: func(ctx context.Context) (*models.NetworkConfig, error) {
 			return &models.NetworkConfig{
@@ -55,7 +55,7 @@ func createMockArgsMxNotifeeWithSomeRealComponents() ArgsMxNotifee {
 	contractAddress, _ := address.NewAddressFromBytes(bytes.Repeat([]byte{1}, 32))
 
 	notifeesWallet, _ := wallet.NewWalletFroHex(walletSk)
-	return ArgsMxNotifee{
+	return ArgsKCNotifee{
 		Proxy:           proxy,
 		TxNonceHandler:  &testsCommon.TxNonceHandlerV2Stub{},
 		ContractAddress: contractAddress,
@@ -84,15 +84,15 @@ func createMockPriceChanges() []*aggregator.ArgsPriceChanged {
 	}
 }
 
-func TestNewMxNotifee(t *testing.T) {
+func TestNewKCNotifee(t *testing.T) {
 	t.Parallel()
 
 	t.Run("nil proxy should error", func(t *testing.T) {
 		t.Parallel()
 
-		args := createMockArgsMxNotifee()
+		args := createMockArgsKCNotifee()
 		args.Proxy = nil
-		en, err := NewMxNotifee(args)
+		en, err := NewKCNotifee(args)
 
 		assert.True(t, check.IfNil(en))
 		assert.Equal(t, errNilProxy, err)
@@ -100,9 +100,9 @@ func TestNewMxNotifee(t *testing.T) {
 	t.Run("nil tx nonce handler should error", func(t *testing.T) {
 		t.Parallel()
 
-		args := createMockArgsMxNotifee()
+		args := createMockArgsKCNotifee()
 		args.TxNonceHandler = nil
-		en, err := NewMxNotifee(args)
+		en, err := NewKCNotifee(args)
 
 		assert.True(t, check.IfNil(en))
 		assert.Equal(t, errNilTxNonceHandler, err)
@@ -110,9 +110,9 @@ func TestNewMxNotifee(t *testing.T) {
 	t.Run("nil contract address should error", func(t *testing.T) {
 		t.Parallel()
 
-		args := createMockArgsMxNotifee()
+		args := createMockArgsKCNotifee()
 		args.ContractAddress = nil
-		en, err := NewMxNotifee(args)
+		en, err := NewKCNotifee(args)
 
 		assert.True(t, check.IfNil(en))
 		assert.Equal(t, errNilContractAddressHandler, err)
@@ -120,9 +120,9 @@ func TestNewMxNotifee(t *testing.T) {
 	t.Run("nil wallet should error", func(t *testing.T) {
 		t.Parallel()
 
-		args := createMockArgsMxNotifee()
+		args := createMockArgsKCNotifee()
 		args.Wallet = nil
-		en, err := NewMxNotifee(args)
+		en, err := NewKCNotifee(args)
 
 		assert.True(t, check.IfNil(en))
 		assert.Equal(t, errNilWallet, err)
@@ -130,9 +130,9 @@ func TestNewMxNotifee(t *testing.T) {
 	t.Run("invalid base gas limit should error", func(t *testing.T) {
 		t.Parallel()
 
-		args := createMockArgsMxNotifee()
+		args := createMockArgsKCNotifee()
 		args.BaseGasLimit = minGasLimit - 1
-		en, err := NewMxNotifee(args)
+		en, err := NewKCNotifee(args)
 
 		assert.True(t, check.IfNil(en))
 		assert.Equal(t, errInvalidBaseGasLimit, err)
@@ -140,9 +140,9 @@ func TestNewMxNotifee(t *testing.T) {
 	t.Run("invalid gas limit for each should error", func(t *testing.T) {
 		t.Parallel()
 
-		args := createMockArgsMxNotifee()
+		args := createMockArgsKCNotifee()
 		args.GasLimitForEach = minGasLimit - 1
-		en, err := NewMxNotifee(args)
+		en, err := NewKCNotifee(args)
 
 		assert.True(t, check.IfNil(en))
 		assert.Equal(t, errInvalidGasLimitForEach, err)
@@ -150,22 +150,22 @@ func TestNewMxNotifee(t *testing.T) {
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		args := createMockArgsMxNotifee()
-		en, err := NewMxNotifee(args)
+		args := createMockArgsKCNotifee()
+		en, err := NewKCNotifee(args)
 
 		assert.False(t, check.IfNil(en))
 		assert.Nil(t, err)
 	})
 }
 
-func TestMxNotifee_PriceChanged(t *testing.T) {
+func TestKCNotifee_PriceChanged(t *testing.T) {
 	t.Parallel()
 
 	t.Run("get nonce errors", func(t *testing.T) {
 		t.Parallel()
 
 		expectedErr := errors.New("expected error")
-		args := createMockArgsMxNotifeeWithSomeRealComponents()
+		args := createMockArgsKCNotifeeWithSomeRealComponents()
 		args.TxNonceHandler = &testsCommon.TxNonceHandlerV2Stub{
 			ApplyNonceAndGasPriceCalled: func(ctx context.Context, address address.Address, tx *transaction.Transaction) error {
 				return expectedErr
@@ -176,7 +176,7 @@ func TestMxNotifee_PriceChanged(t *testing.T) {
 			},
 		}
 
-		en, err := NewMxNotifee(args)
+		en, err := NewKCNotifee(args)
 		require.Nil(t, err)
 
 		priceChanges := createMockPriceChanges()
@@ -186,7 +186,7 @@ func TestMxNotifee_PriceChanged(t *testing.T) {
 	t.Run("invalid price arguments", func(t *testing.T) {
 		t.Parallel()
 
-		args := createMockArgsMxNotifeeWithSomeRealComponents()
+		args := createMockArgsKCNotifeeWithSomeRealComponents()
 		args.TxNonceHandler = &testsCommon.TxNonceHandlerV2Stub{
 			ApplyNonceAndGasPriceCalled: func(ctx context.Context, address address.Address, tx *transaction.Transaction) error {
 				tx.RawData.Nonce = 43
@@ -198,7 +198,7 @@ func TestMxNotifee_PriceChanged(t *testing.T) {
 			},
 		}
 
-		en, err := NewMxNotifee(args)
+		en, err := NewKCNotifee(args)
 		require.Nil(t, err)
 
 		priceChanges := createMockPriceChanges()
@@ -210,7 +210,7 @@ func TestMxNotifee_PriceChanged(t *testing.T) {
 		t.Parallel()
 
 		expectedErr := errors.New("expected error")
-		args := createMockArgsMxNotifeeWithSomeRealComponents()
+		args := createMockArgsKCNotifeeWithSomeRealComponents()
 		args.Proxy = &interactors.ProxyStub{
 			GetNetworkConfigCalled: func(ctx context.Context) (*models.NetworkConfig, error) {
 				return nil, expectedErr
@@ -227,7 +227,7 @@ func TestMxNotifee_PriceChanged(t *testing.T) {
 			},
 		}
 
-		en, err := NewMxNotifee(args)
+		en, err := NewKCNotifee(args)
 		require.Nil(t, err)
 
 		priceChanges := createMockPriceChanges()
@@ -238,7 +238,7 @@ func TestMxNotifee_PriceChanged(t *testing.T) {
 		t.Parallel()
 
 		expectedErr := errors.New("expected error")
-		args := createMockArgsMxNotifeeWithSomeRealComponents()
+		args := createMockArgsKCNotifeeWithSomeRealComponents()
 		args.TxNonceHandler = &testsCommon.TxNonceHandlerV2Stub{
 			ApplyNonceAndGasPriceCalled: func(ctx context.Context, address address.Address, tx *transaction.Transaction) error {
 				tx.RawData.Nonce = 43
@@ -249,7 +249,7 @@ func TestMxNotifee_PriceChanged(t *testing.T) {
 			},
 		}
 
-		en, err := NewMxNotifee(args)
+		en, err := NewKCNotifee(args)
 		require.Nil(t, err)
 
 		priceChanges := createMockPriceChanges()
@@ -261,7 +261,7 @@ func TestMxNotifee_PriceChanged(t *testing.T) {
 
 		priceChanges := createMockPriceChanges()
 		sentWasCalled := false
-		args := createMockArgsMxNotifeeWithSomeRealComponents()
+		args := createMockArgsKCNotifeeWithSomeRealComponents()
 		args.TxNonceHandler = &testsCommon.TxNonceHandlerV2Stub{
 			ApplyNonceAndGasPriceCalled: func(ctx context.Context, address address.Address, tx *transaction.Transaction) error {
 				tx.RawData.Nonce = 43
@@ -313,7 +313,7 @@ func TestMxNotifee_PriceChanged(t *testing.T) {
 			},
 		}
 
-		en, err := NewMxNotifee(args)
+		en, err := NewKCNotifee(args)
 		require.Nil(t, err)
 
 		err = en.PriceChanged(context.Background(), priceChanges)
