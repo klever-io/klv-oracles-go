@@ -181,3 +181,8 @@ func (w *wallet) PublicKey() []byte {
 func (w *wallet) Address() (address.Address, error) {
 	return address.NewAddressFromBytes(w.publicKey)
 }
+
+// IsInterfaceNil returns true if there is no value under the interface
+func (w *wallet) IsInterfaceNil() bool {
+	return w == nil
+}

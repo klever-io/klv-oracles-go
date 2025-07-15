@@ -72,6 +72,9 @@ func checkArgsKCNotifee(args ArgsKCNotifee) error {
 	if check.IfNil(args.ContractAddress) {
 		return errNilContractAddressHandler
 	}
+	if check.IfNil(args.Wallet) {
+		return errNilWallet
+	}
 
 	return nil
 }

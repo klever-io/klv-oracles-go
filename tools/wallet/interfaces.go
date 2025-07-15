@@ -8,4 +8,5 @@ type Wallet interface {
 	Address() (address.Address, error)
 	Sign(msg []byte) ([]byte, error)
 	SignHex(msg string) ([]byte, error)
+	IsInterfaceNil() bool
 }
