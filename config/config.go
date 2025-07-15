@@ -14,6 +14,7 @@ type PriceNotifierConfig struct {
 // GeneralNotifierConfig general price notifier configuration struct
 type GeneralNotifierConfig struct {
 	NetworkAddress               string
+	GasStationAPI                string
 	PrivateKeyFile               string
 	IntervalToResendTxsInSeconds uint64
 	ProxyCacherExpirationSeconds uint64

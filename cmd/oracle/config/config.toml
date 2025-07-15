@@ -1,5 +1,6 @@
 [GeneralConfig]
     NetworkAddress = "https://node.testnet.klever.org" # the network address
+    GasStationAPI = "https://api.etherscan.io/api?module=gastracker&action=gasoracle" # gas station URL. Suggestion to provide the api-key here
     PrivateKeyFile = "keys/oracle.pem" # the path to the pem file containing the relayer klever blockchain wallet allowed to write to contract
     IntervalToResendTxsInSeconds = 60 # the time in seconds between nonce reads
     ProxyCacherExpirationSeconds = 600 # the caching time in seconds

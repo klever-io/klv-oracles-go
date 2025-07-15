@@ -181,7 +181,7 @@ func startOracle(ctx *cli.Context, version string) error {
 		FetcherName:    fetchers.EVMGasPriceStation,
 		ResponseGetter: httpResponseGetter,
 		EVMGasConfig: fetchers.EVMGasPriceFetcherConfig{
-			ApiURL:   "https://api.etherscan.io/api?module=gastracker&action=gasoracle",
+			ApiURL:   cfg.GeneralConfig.GasStationAPI,
 			Selector: "SafeGasPrice",
 		},
 	}
