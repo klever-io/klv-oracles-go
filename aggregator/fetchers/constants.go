@@ -28,13 +28,12 @@ const (
 
 // ImplementedFetchers is the map of all implemented exchange fetchers
 var ImplementedFetchers = map[string]struct{}{
-	BinanceName:        {},
-	BitfinexName:       {},
-	CryptocomName:      {},
-	GeminiName:         {},
-	HitbtcName:         {},
-	HuobiName:          {},
-	KrakenName:         {},
-	OkxName:            {},
-	EVMGasPriceStation: {},
+	BinanceName:   {},
+	BitfinexName:  {},
+	CryptocomName: {},
+	GeminiName:    {},
+	HitbtcName:    {},
+	HuobiName:     {},
+	KrakenName:    {},
+	OkxName:       {},
 }

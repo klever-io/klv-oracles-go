@@ -16,7 +16,6 @@ import (
 )
 
 const function = "submitBatch"
-const minGasLimit = uint64(1)
 
 var log = logger.GetOrCreate("klv-oracle-go/aggregator/notifees")
 
@@ -37,8 +36,6 @@ type kcNotifee struct {
 	wallet          wallet.Wallet
 	hasher          hashing.Hasher
 	marshalizer     marshal.Marshalizer
-	baseGasLimit    uint64
-	gasLimitForEach uint64
 }
 
 // NewKCNotifee will create a new instance of kcNotifee
@@ -60,8 +57,6 @@ func NewKCNotifee(args ArgsKCNotifee) (*kcNotifee, error) {
 		wallet:          args.Wallet,
 		hasher:          hasher,
 		marshalizer:     marshal.NewProtoMarshalizer(),
-		baseGasLimit:    args.BaseGasLimit,
-		gasLimitForEach: args.GasLimitForEach,
 	}
 
 	return notifee, nil
@@ -76,12 +71,6 @@ func checkArgsKCNotifee(args ArgsKCNotifee) error {
 	}
 	if check.IfNil(args.ContractAddress) {
 		return errNilContractAddressHandler
-	}
-	if args.BaseGasLimit < minGasLimit {
-		return errInvalidBaseGasLimit
-	}
-	if args.GasLimitForEach < minGasLimit {
-		return errInvalidGasLimitForEach
 	}
 
 	return nil

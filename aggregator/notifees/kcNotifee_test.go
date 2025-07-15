@@ -127,26 +127,6 @@ func TestNewKCNotifee(t *testing.T) {
 		assert.True(t, check.IfNil(en))
 		assert.Equal(t, errNilWallet, err)
 	})
-	t.Run("invalid base gas limit should error", func(t *testing.T) {
-		t.Parallel()
-
-		args := createMockArgsKCNotifee()
-		args.BaseGasLimit = minGasLimit - 1
-		en, err := NewKCNotifee(args)
-
-		assert.True(t, check.IfNil(en))
-		assert.Equal(t, errInvalidBaseGasLimit, err)
-	})
-	t.Run("invalid gas limit for each should error", func(t *testing.T) {
-		t.Parallel()
-
-		args := createMockArgsKCNotifee()
-		args.GasLimitForEach = minGasLimit - 1
-		en, err := NewKCNotifee(args)
-
-		assert.True(t, check.IfNil(en))
-		assert.Equal(t, errInvalidGasLimitForEach, err)
-	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
