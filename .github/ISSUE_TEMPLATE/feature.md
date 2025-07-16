@@ -1,6 +1,6 @@
 ---
 name: Feature
-about: Suggest a new feature for mx-oracles-go
+about: Suggest a new feature for klv-oracles-go
 title: "[FEAT]"
 labels: enhancement
 assignees: ''

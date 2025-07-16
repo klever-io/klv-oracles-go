@@ -8,35 +8,30 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/klever-io/klv-bridge-eth-go/clients/klever/blockchain/address"
+	nonceHandler "github.com/klever-io/klv-bridge-eth-go/clients/klever/interactors/nonceHandlerV2"
+	"github.com/klever-io/klv-bridge-eth-go/clients/klever/proxy"
+	"github.com/klever-io/klv-bridge-eth-go/clients/klever/proxy/models"
+	"github.com/klever-io/klv-oracles-go/aggregator"
+	"github.com/klever-io/klv-oracles-go/aggregator/api/gin"
+	"github.com/klever-io/klv-oracles-go/aggregator/fetchers"
+	gas "github.com/klever-io/klv-oracles-go/aggregator/gasStation"
+	"github.com/klever-io/klv-oracles-go/aggregator/notifees"
+	"github.com/klever-io/klv-oracles-go/config"
+	"github.com/klever-io/klv-oracles-go/tools/wallet"
 	chainCore "github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
-	"github.com/multiversx/mx-chain-crypto-go/signing"
-	"github.com/multiversx/mx-chain-crypto-go/signing/ed25519"
 	chainFactory "github.com/multiversx/mx-chain-go/cmd/node/factory"
 	chainCommon "github.com/multiversx/mx-chain-go/common"
 	logger "github.com/multiversx/mx-chain-logger-go"
 	"github.com/multiversx/mx-chain-logger-go/file"
-	"github.com/multiversx/mx-oracles-go/config"
-	"github.com/multiversx/mx-sdk-go/aggregator"
-	"github.com/multiversx/mx-sdk-go/aggregator/api/gin"
-	"github.com/multiversx/mx-sdk-go/aggregator/fetchers"
-	"github.com/multiversx/mx-sdk-go/aggregator/notifees"
-	"github.com/multiversx/mx-sdk-go/authentication"
-	"github.com/multiversx/mx-sdk-go/blockchain"
-	"github.com/multiversx/mx-sdk-go/blockchain/cryptoProvider"
-	"github.com/multiversx/mx-sdk-go/builders"
-	sdkCore "github.com/multiversx/mx-sdk-go/core"
 	"github.com/multiversx/mx-sdk-go/core/polling"
-	"github.com/multiversx/mx-sdk-go/data"
-	"github.com/multiversx/mx-sdk-go/interactors"
-	"github.com/multiversx/mx-sdk-go/interactors/nonceHandlerV2"
-	"github.com/multiversx/mx-sdk-go/workflows"
 	"github.com/urfave/cli"
 )
 
 const (
 	defaultLogsPath = "logs"
-	logFilePrefix   = "mx-oracle"
+	logFilePrefix   = "klv-oracle"
 )
 
 var log = logger.GetOrCreate("priceFeeder/main")
@@ -44,10 +39,13 @@ var log = logger.GetOrCreate("priceFeeder/main")
 // appVersion should be populated at build time using ldflags
 // Usage examples:
 // linux/mac:
-//            go build -i -v -ldflags="-X main.appVersion=$(git describe --tags --long --dirty)"
+//
+//	go build -i -v -ldflags="-X main.appVersion=$(git describe --tags --long --dirty)"
+//
 // windows:
-//            for /f %i in ('git describe --tags --long --dirty') do set VERS=%i
-//            go build -i -v -ldflags="-X main.appVersion=%VERS%"
+//
+//	for /f %i in ('git describe --tags --long --dirty') do set VERS=%i
+//	go build -i -v -ldflags="-X main.appVersion=%VERS%"
 var appVersion = chainCommon.UnVersionedAppString
 
 func main() {
@@ -60,8 +58,8 @@ func main() {
 	app.Version = fmt.Sprintf("%s/%s/%s-%s/%s", appVersion, runtime.Version(), runtime.GOOS, runtime.GOARCH, machineID)
 	app.Authors = []cli.Author{
 		{
-			Name:  "The MultiversX Team",
-			Email: "contact@multiversx.com",
+			Name:  "The Klever Blockchain Team",
+			Email: "contact@klever.io",
 		},
 	}
 
@@ -114,58 +112,35 @@ func startOracle(ctx *cli.Context, version string) error {
 		return fmt.Errorf("empty NetworkAddress in config file")
 	}
 
-	argsProxy := blockchain.ArgsProxy{
+	argsProxy := proxy.ArgsProxy{
 		ProxyURL:            cfg.GeneralConfig.NetworkAddress,
 		SameScState:         false,
 		ShouldBeSynced:      false,
 		FinalityCheck:       cfg.GeneralConfig.ProxyFinalityCheck,
 		AllowedDeltaToFinal: cfg.GeneralConfig.ProxyMaxNoncesDelta,
 		CacheExpirationTime: time.Second * time.Duration(cfg.GeneralConfig.ProxyCacherExpirationSeconds),
-		EntityType:          sdkCore.RestAPIEntityType(cfg.GeneralConfig.ProxyRestAPIEntityType),
+		EntityType:          models.RestAPIEntityType(cfg.GeneralConfig.ProxyRestAPIEntityType),
 	}
-	proxy, err := blockchain.NewProxy(argsProxy)
+	proxy, err := proxy.NewProxy(argsProxy)
 	if err != nil {
 		return err
 	}
 
-	txBuilder, err := builders.NewTxBuilder(cryptoProvider.NewSigner())
-	if err != nil {
-		return err
-	}
-
-	args := nonceHandlerV2.ArgsNonceTransactionsHandlerV2{
+	args := nonceHandler.ArgsNonceTransactionsHandlerV2{
 		Proxy:            proxy,
 		IntervalToResend: time.Second * time.Duration(cfg.GeneralConfig.IntervalToResendTxsInSeconds),
-		Creator:          &nonceHandlerV2.SingleTransactionAddressNonceHandlerCreator{},
 	}
-	txNonceHandler, err := nonceHandlerV2.NewNonceTransactionHandlerV2(args)
+	txNonceHandler, err := nonceHandler.NewNonceTransactionHandlerV2(args)
 	if err != nil {
 		return err
 	}
 
-	aggregatorAddress, err := data.NewAddressFromBech32String(cfg.GeneralConfig.AggregatorContractAddress)
+	aggregatorAddress, err := address.NewAddress(cfg.GeneralConfig.AggregatorContractAddress)
 	if err != nil {
 		return err
 	}
 
-	var keyGen = signing.NewKeyGenerator(ed25519.NewEd25519())
-	wallet := interactors.NewWallet()
-	privateKeyBytes, err := wallet.LoadPrivateKeyFromPemFile(cfg.GeneralConfig.PrivateKeyFile)
-	if err != nil {
-		return err
-	}
-
-	cryptoHolder, err := cryptoProvider.NewCryptoComponentsHolder(keyGen, privateKeyBytes)
-	if err != nil {
-		return err
-	}
-
-	authClient, err := createAuthClient(proxy, cryptoHolder, cfg.AuthenticationConfig)
-	if err != nil {
-		return err
-	}
-
-	graphqlResponseGetter, err := aggregator.NewGraphqlResponseGetter(authClient)
+	oracleWallet, err := wallet.NewWalletFromPEM(cfg.GeneralConfig.PrivateKeyFile)
 	if err != nil {
 		return err
 	}
@@ -175,7 +150,7 @@ func startOracle(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	priceFetchers, err := createPriceFetchers(httpResponseGetter, graphqlResponseGetter, cfg.XExchangeTokenIDsMappings)
+	priceFetchers, err := createPriceFetchers(httpResponseGetter)
 	if err != nil {
 		return err
 	}
@@ -189,19 +164,38 @@ func startOracle(ctx *cli.Context, version string) error {
 		return err
 	}
 
+	argsNotifee := notifees.ArgsKCNotifee{
+		Proxy:           proxy,
+		TxNonceHandler:  txNonceHandler,
+		ContractAddress: aggregatorAddress,
+		Wallet:          oracleWallet,
+		BaseGasLimit:    cfg.GeneralConfig.BaseGasLimit,
+		GasLimitForEach: cfg.GeneralConfig.GasLimitForEach,
+	}
+	kcNotifee, err := notifees.NewKCNotifee(argsNotifee)
 	if err != nil {
 		return err
 	}
-	argsNotifee := notifees.ArgsMxNotifee{
-		Proxy:           proxy,
-		TxBuilder:       txBuilder,
-		TxNonceHandler:  txNonceHandler,
-		ContractAddress: aggregatorAddress,
-		BaseGasLimit:    cfg.GeneralConfig.BaseGasLimit,
-		GasLimitForEach: cfg.GeneralConfig.GasLimitForEach,
-		CryptoHolder:    cryptoHolder,
+
+	gasStationFetcherArgs := fetchers.ArgsPriceFetcher{
+		FetcherName:    fetchers.EVMGasPriceStation,
+		ResponseGetter: httpResponseGetter,
+		EVMGasConfig: fetchers.EVMGasPriceFetcherConfig{
+			ApiURL:   cfg.GeneralConfig.GasStationAPI,
+			Selector: "SafeGasPrice",
+		},
 	}
-	mxNotifee, err := notifees.NewMxNotifee(argsNotifee)
+
+	gasPriceFetcher, err := fetchers.NewPriceFetcher(gasStationFetcherArgs)
+	if err != nil {
+		return err
+	}
+
+	gasServiceArgs := gas.ArgsGasPriceService{
+		GasPriceFetcher: gasPriceFetcher,
+	}
+
+	gasService, err := gas.NewGasPriceService(gasServiceArgs)
 	if err != nil {
 		return err
 	}
@@ -209,7 +203,8 @@ func startOracle(ctx *cli.Context, version string) error {
 	argsPriceNotifier := aggregator.ArgsPriceNotifier{
 		Pairs:            []*aggregator.ArgsPair{},
 		Aggregator:       priceAggregator,
-		Notifee:          mxNotifee,
+		GasPriceService:  gasService,
+		Notifee:          kcNotifee,
 		AutoSendInterval: time.Second * time.Duration(cfg.GeneralConfig.AutoSendIntervalInSeconds),
 	}
 	for _, pair := range cfg.Pairs {
@@ -223,6 +218,20 @@ func startOracle(ctx *cli.Context, version string) error {
 		addPairToFetchers(argsPair, priceFetchers)
 		argsPriceNotifier.Pairs = append(argsPriceNotifier.Pairs, &argsPair)
 	}
+
+	for _, pair := range cfg.GasStationPair {
+		gasArgsPair := aggregator.ArgsPair{
+			Base:                      "GWEI",
+			Quote:                     pair.Quote,
+			PercentDifferenceToNotify: pair.PercentDifferenceToNotify,
+			Decimals:                  pair.Decimals,
+			Exchanges:                 getMapFromSlice(pair.Exchanges),
+		}
+
+		gasPriceFetcher.AddPair(gasArgsPair.Base, gasArgsPair.Quote)
+		argsPriceNotifier.Pairs = append(argsPriceNotifier.Pairs, &gasArgsPair)
+	}
+
 	priceNotifier, err := aggregator.NewPriceNotifier(argsPriceNotifier)
 	if err != nil {
 		return err
@@ -251,7 +260,7 @@ func startOracle(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	log.Info("Starting MultiversX Notifee")
+	log.Info("Starting Klever Blockchain Notifee")
 
 	err = pollingHandler.StartProcessingLoop()
 	if err != nil {
@@ -279,12 +288,17 @@ func loadConfig(filepath string) (config.PriceNotifierConfig, error) {
 	return cfg, nil
 }
 
-func createPriceFetchers(httpReponseGetter aggregator.ResponseGetter, graphqlResponseGetter aggregator.GraphqlGetter, tokenIdsMappings map[string]fetchers.XExchangeTokensPair) ([]aggregator.PriceFetcher, error) {
+func createPriceFetchers(httpReponseGetter aggregator.ResponseGetter) ([]aggregator.PriceFetcher, error) {
 	exchanges := fetchers.ImplementedFetchers
 	priceFetchers := make([]aggregator.PriceFetcher, 0, len(exchanges))
 
 	for exchangeName := range exchanges {
-		priceFetcher, err := fetchers.NewPriceFetcher(exchangeName, httpReponseGetter, graphqlResponseGetter, tokenIdsMappings)
+		args := fetchers.ArgsPriceFetcher{
+			FetcherName:    exchangeName,
+			ResponseGetter: httpReponseGetter,
+		}
+
+		priceFetcher, err := fetchers.NewPriceFetcher(args)
 		if err != nil {
 			return nil, err
 		}
@@ -293,24 +307,6 @@ func createPriceFetchers(httpReponseGetter aggregator.ResponseGetter, graphqlRes
 	}
 
 	return priceFetchers, nil
-}
-
-func createAuthClient(proxy workflows.ProxyHandler, cryptoHolder sdkCore.CryptoComponentsHolder, config config.AuthenticationConfig) (authentication.AuthClient, error) {
-	args := authentication.ArgsNativeAuthClient{
-		Signer:                 cryptoProvider.NewSigner(),
-		ExtraInfo:              nil,
-		Proxy:                  proxy,
-		TokenExpiryInSeconds:   uint64(config.TokenExpiryInSeconds),
-		Host:                   config.Host,
-		CryptoComponentsHolder: cryptoHolder,
-	}
-
-	authClient, err := authentication.NewNativeAuthClient(args)
-	if err != nil {
-		return nil, err
-	}
-
-	return authClient, nil
 }
 
 func addPairToFetchers(argsPair aggregator.ArgsPair, priceFetchers []aggregator.PriceFetcher) {

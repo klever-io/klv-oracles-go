@@ -1,6 +1,6 @@
 ---
 name: Bug Report
-about: Report a bug in mx-oracles-go node
+about: Report a bug in klv-oracles-go node
 title: "[BUG]"
 labels: bug
 assignees: ''

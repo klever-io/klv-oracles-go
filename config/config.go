@@ -1,18 +1,20 @@
 package config
 
-import "github.com/multiversx/mx-sdk-go/aggregator/fetchers"
+import "github.com/klever-io/klv-oracles-go/aggregator/fetchers"
 
 // PriceNotifierConfig price notifier configuration struct
 type PriceNotifierConfig struct {
 	GeneralConfig             GeneralNotifierConfig
 	AuthenticationConfig      AuthenticationConfig
 	Pairs                     []Pair
+	GasStationPair            []Pair
 	XExchangeTokenIDsMappings map[string]fetchers.XExchangeTokensPair
 }
 
 // GeneralNotifierConfig general price notifier configuration struct
 type GeneralNotifierConfig struct {
 	NetworkAddress               string
+	GasStationAPI                string
 	PrivateKeyFile               string
 	IntervalToResendTxsInSeconds uint64
 	ProxyCacherExpirationSeconds uint64
